@@ -9,7 +9,7 @@ weights_base = uweights(length(sample_space))
 rng = MersenneTwister(20221223)
 
 reference = sample(rng, sample_space, weights_base, n_samples)
-println(countmap(reference))
+println(counts(reference))
 
 StatsBase.@weights AdjustingWeights
 
@@ -34,10 +34,7 @@ function StatsBase.sample(
     n_samples::Integer;
     nudge_factor::Float64 = 1.0
 ) where T
-    correction = let    
-        event_rate = 1 / length(weights)
-        event_rate * nudge_factor - 1e-4
-    end
+    correction = nudge_factor - 1e-4
     target_weights = weights ./ sum(weights)
     running_weights = collect(target_weights)
 
@@ -57,7 +54,7 @@ function StatsBase.sample(
         # Fix underflow
         if running_weights[samples[i]]  < 0
             running_weights[samples[i]]  = 0
-            println("Underflow on index $(samples[i])")
+            # println("Underflow on index $(samples[i])")
         end
     end
     [sample_space[index] for index in samples]
@@ -65,7 +62,7 @@ end
 
 test = sample(rng, sample_space, AdjustingWeights(weights_base), n_samples)
 
-println(countmap(test))
+println(counts(test))
 
 function extreme_diffs(rng, sample_space, weights_base, n_samples, n_replications)
     [
@@ -80,9 +77,10 @@ function extreme_diffs(rng, sample_space, weights_base, n_samples, n_replication
     ]
 end
 
-ed = extreme_diffs(rng, sample_space, weights_base, n_samples, 100000)
+ed = extreme_diffs(rng, sample_space, weights_base, n_samples, 10000)
 countmap(ed)
 mean(ed)
 std(ed)
+# Yay, much more even! This is random more akin to the way humans do it.
 
-# Not quite the resounding success I had hoped for. I think this might need some tuning.
+sample(rng, 0:1, uweights(2), 20)
