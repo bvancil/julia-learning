@@ -140,7 +140,12 @@ end
 
 kansas_blue = brand_colors["Kansas Blue"]
 crimson = brand_colors["Crimson"]
-[kansas_blue, hcl_match(crimson, kansas_blue; c=true, l=true), hcl_match(kansas_blue, crimson; c=true, l=true), crimson]
+[
+    kansas_blue,
+    hcl_match(crimson, kansas_blue; c=true, l=true),
+    hcl_match(kansas_blue, crimson; c=true, l=true),
+    crimson
+]
 
 function diverging_palette(color1::RGB, color2::RGB, n)
     Colors.diverging_palette(
@@ -157,18 +162,42 @@ p = diverging_palette(brand_colors["Kansas Blue"], brand_colors["Crimson"], 256)
 [luminance(c) for c in p]
 [chroma(c) for c in p]
 color_scheme = ColorSchemes.ColorScheme(p)
+
+"""Alter color_scheme to match beginning and ending colors' hues better."""
+function warp_diverging(color_scheme::ColorScheme, color1::RGB, color2::RGB, exponent::Float64 = 3.0)
+    new_color_scheme = [color for color in color_scheme]
+    for (index, color) in enumerate(color_scheme)
+        affine_parameter = index / length(color_scheme)
+        # 1 at ends and 0 in middle:
+        warping_ratio = abs(2 * affine_parameter - 1) ^ exponent
+        target_color = (affine_parameter <= 0.5) ? color1 : color2
+        color_hcl = convert(LCHuv, color)
+        new_luminance = color_hcl.l
+        new_chroma = color_hcl.c
+        new_hue = warping_ratio * hue(target_color) + (1 - warping_ratio) * color_hcl.h
+        new_color_scheme[index] = convert(RGB, LCHuv(new_luminance, new_chroma, new_hue))
+    end
+    new_color_scheme
+end
+
 brand_palettes = Dict{Symbol,ColorScheme}(
     :div_blue_red => ColorScheme(
-        hcl_match.(
-            ColorSchemes.colorschemes[:vik].colors,
-            diverging_palette(brand_colors["Kansas Blue"], brand_colors["Crimson"], 256);
-            h=true
+        warp_diverging(
+            ColorSchemes.colorschemes[:vik],
+            brand_colors["Kansas Blue"],
+            brand_colors["Crimson"]
         ),
         "Diverging Blue-White-Red",
-        "notes here"
+        "Based on vik"
     ),
-    :div_blue_red_sci_vik => ColorSchemes.colorschemes[:vik],
+    :vik => ColorSchemes.colorschemes[:vik],
 )
-brand_palettes[:div_blue_red]
 
+ColorSchemes.colorschemes[:vik]
+p = brand_palettes[:div_blue_red]
+plot([hue(c) for c in p])
+plot([luminance(c) for c in p])
+plot([chroma(c) for c in p])
+convert(LCHuv, kansas_blue)
+convert(LCHuv, crimson)
 end
