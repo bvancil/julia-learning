@@ -1,0 +1,4 @@
+[deps]
+FundamentalsNumericalComputation = "e48b7b93-d2a8-4750-aba7-f743ccd5256c"
+JuliaFormatter = "98e50ef6-434e-11e9-1051-2b60c6c9e899"
+OhMyREPL = "5fb14364-9ced-5910-84b2-373655c76a03"
